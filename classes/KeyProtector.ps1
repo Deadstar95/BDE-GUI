@@ -2,6 +2,11 @@ class KeyProtector {
     [string] $ProtectorId
     [KeyProtectorType] $ProtectorType
     [UInt32] $ProtectorFlags
+    
+    KeyProtector($prId, $pType) {
+        $this.ProtectorId = $prId
+        $this.ProtectorType = $pType
+    }
 }
 
 enum KeyProtectorType {

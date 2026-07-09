@@ -70,6 +70,16 @@ $BDEGUIUnlockForm_Load = {
 	$VolumesComboBox.Items.AddRange(($global:encryptableVolumes | Select-Object -ExpandProperty DriveLetter))
 }
 
+$VolumesComboBox_SelectedIndexChanged = {
+	$volumeProtectors = Get-VolumeKeyProtectors -PersistentVolumeID "$($global:encryptableVolumes[$VolumesComboBox.SelectedIndex].PersistentVolumeID)"
+	$passwordProtectors = $volumeProtectors | Where-Object { $_.ProtectorType -eq [KeyProtectorType]::NumericalPassword }
+	if ($passwordProtectors -eq $null) {
+		$KPIDLabel.Text = ""
+	} else {
+		$KPIDLabel.Text = "$($passwordProtectors.ProtectorId.Replace('{', '').Replace('}', ''))"
+	}
+}
+
 $OK_Button_Click = {
 	# Build up the numerical password.
 	$BDEGUIUnlockForm.Cursor = 'WaitCursor'

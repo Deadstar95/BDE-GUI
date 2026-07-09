@@ -11,6 +11,58 @@ function Get-EncryptedVolumes {
     return $encryptedVolumes
 }
 
+function Get-EncryptedVolumeInstance {
+    param (
+        [Parameter(Mandatory, Position = 0)] [string] $PersistentVolumeID
+    )
+    
+    try {
+        return Get-CimInstance -Namespace "root\CIMv2\Security\MicrosoftVolumeEncryption" -Query "SELECT * FROM Win32_EncryptableVolume WHERE PersistentVolumeID = `"$PersistentVolumeID`"" -ErrorAction Stop
+    } catch {
+        return $null
+    }
+}
+
+function Get-VolumeKeyProtectors {
+    param (
+        [Parameter(Mandatory, Position = 0)] [string] $PersistentVolumeID,
+        [Parameter(Position = 1)] [int] $ProtectorType = 0
+    )
+    
+    $keyProtectors = [List[KeyProtector]]::new()
+    
+    try {
+        $encVolumeInstance = Get-EncryptedVolumeInstance -PersistentVolumeID "$PersistentVolumeID"
+        if ($null -eq $encVolumeInstance) {
+            return $keyProtectors
+        }
+        $keyProtectorResults = $encVolumeInstance | Invoke-CimMethod -MethodName "GetKeyProtectors" -Arguments @{KeyProtectorType = $ProtectorType} -ErrorAction Stop
+        if ($null -eq $keyProtectorResults) {
+            return $KeyProtectors
+        }
+        
+        $keyProtectorIds = $keyProtectorResults.VolumeKeyProtectorID
+        foreach ($keyProtectorId in $keyProtectorIds) {
+            $keyProtector = $null
+            try {
+                $keyProtectorTypeResult = $encVolumeInstance | Invoke-CimMethod -MethodName "GetKeyProtectorType" -Arguments @{VolumeKeyProtectorID = "$keyProtectorId"} -ErrorAction Stop
+                if (($null -eq $keyProtectorTypeResult) -or ($keyProtectorTypeResult.ReturnValue -ne 0)) {
+                    throw
+                }
+                $keyProtectorType = $keyProtectorTypeResult.KeyProtectorType
+                $keyProtector = [KeyProtector]::new("$keyProtectorId", $keyProtectorType)
+            } catch {
+                continue
+            }
+            $keyProtectors.Add($keyProtector)            
+        }
+    } catch {
+        return $keyProtectors
+    }
+    
+    return $keyProtectors
+}
+
 function Test-NumericalPasswordFormat {
     param (
         [Parameter(Mandatory, Position = 0)] [string] $NumericalPassword
@@ -56,7 +108,7 @@ function Unlock-EncryptedVolumeWithNumericalPassword {
     }
     
     try {
-        $encVolumeInstance = Get-CimInstance -Namespace "root\CIMv2\Security\MicrosoftVolumeEncryption" -Query "SELECT * FROM Win32_EncryptableVolume WHERE PersistentVolumeID = `"$PersistentVolumeID`""
+        $encVolumeInstance = Get-EncryptedVolumeInstance -PersistentVolumeID "$PersistentVolumeID"
         if ($null -eq $encVolumeInstance) {
             throw
         }
