@@ -37,6 +37,12 @@ $Refresh_Button_Click = {
 }
 
 $VolumesComboBox_SelectedIndexChanged = {
+	# display information about the selected volume
+	try {
+		
+	} catch {
+		# don't do anything
+	}
 }
 
 Add-Type -AssemblyName System.Windows.Forms
