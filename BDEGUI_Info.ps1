@@ -105,8 +105,26 @@ $VolumesComboBox_SelectedIndexChanged = {
 			}
 
 			$lblVersion.Text = "$VersionStatus ($VersionStr)"
+			$lvProtectors.Items.Clear()
 
-	
+			$KeyProtectors = Get-VolumeKeyProtectors -PersistentVolumeID $selectedEncryptableVolume.PersistentVolumeID
+			foreach ($keyProtector in $KeyProtectors) {
+				$protectorTypeStr = ""
+				switch ($keyProtector.ProtectorType){
+					"Unknown" { $protectorTypeStr = "Unknown"}
+					"TPM" { $protectorTypeStr = "TPM"}
+					"ExternalKey" { $protectorTypeStr = "External Key"}
+					"NumericalPassword" { $protectorTypeStr = "Numerical Password"}
+					"TPMPin" { $protectorTypeStr = "TPM & PIN"}
+					"TPMStartupKey" { $protectorTypeStr = "TPM & Startup Key"}
+					"TPMPinStartupKey" { $protectorTypeStr = "TPM, PIN & Startup Key"}
+					"PublicKey" { $protectorTypeStr = "Public Key"}
+					"Passphrase" { $protectorTypeStr = "Passphrase"}
+					"TPMCert" { $protectorTypeStr = "TPM Certificate"}
+					"CNG" { $protectorTypeStr = "CryptoAPI Next Generation (CNG) Protector"}
+				}
+				$lvProtectors.Items.Add([System.Windows.Forms.ListViewItem]::new([string[]]@($keyProtector.ProtectorId , $protectorTypeStr)))
+			}
 		}
 		
 
